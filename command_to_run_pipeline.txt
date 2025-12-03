@@ -1,0 +1,1 @@
+py dataflow_streaming_bigquery.py --runner=DataflowRunner --project=oceanic-camera-477716-i1 --region=asia-south1 --temp_location=gs://dataflow789/temp --staging_location=gs://dataflow789/stage --input_subscription=projects/oceanic-camera-477716-i1/subscriptions/gcs-csv-sub --output_table=oceanic-camera-477716-i1.Streaming123.TBL_EMPLOYEE_STREAMING --job_name=gcs-csv-streaming
