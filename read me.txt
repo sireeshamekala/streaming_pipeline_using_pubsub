@@ -1,0 +1,240 @@
+Below is your updated complete conceptual flow including the part about running two files in two terminals (one for CSV generation and one for the Dataflow job).
+
+End-to-End Pipeline Goal
+You want a streaming pipeline:
+
+CSV File → Cloud Storage → Pub/Sub → Dataflow → BigQuery
+
+Whenever a CSV file is uploaded to the bucket, the data should automatically appear in a BigQuery table.
+
+1. Create a BigQuery Dataset
+First create a dataset in BigQuery.
+
+Example
+Dataset name: Streaming123
+
+A dataset is like a folder that contains tables.
+
+2. Create the BigQuery Table
+Inside the dataset create the table where Dataflow will insert data.
+
+Example table:
+
+TBL_EMPLOYEE_STREAMING
+
+Columns:
+
+Column	Type
+id	INTEGER
+name	STRING
+location	STRING
+This table will store the rows coming from the CSV files.
+
+3. Create a Cloud Storage Bucket
+Create a Cloud Storage bucket.
+
+Example:
+
+ex-bucket9
+
+This bucket is where CSV files will be uploaded.
+
+When a file appears here, it should trigger the pipeline.
+
+4. Create a Pub/Sub Topic
+Create a Pub/Sub topic.
+
+Example:
+
+gcs-file-topic
+
+This topic receives notifications whenever a file is uploaded to the bucket.
+
+Think of it like a message channel that broadcasts events.
+
+5. Create a Pub/Sub Subscription
+Create a subscription for that topic.
+
+Example:
+
+gcs-file-topic-sub
+
+Your Dataflow pipeline will read messages from this subscription.
+
+Flow so far:
+
+Cloud Storage → Pub/Sub Topic → Pub/Sub Subscription
+
+6. Connect Cloud Storage to Pub/Sub
+This is the most important configuration.
+
+Configure the bucket so that whenever a file upload finishes, a message is sent to the Pub/Sub topic.
+
+The message contains information such as:
+
+bucket name
+
+file name
+
+file path
+
+Example message:
+
+{
+ "bucket": "ex-bucket9",
+ "name": "employee.csv"
+}
+Without this configuration, Dataflow will never know that a file was uploaded.
+
+7. Set IAM Permissions
+The Dataflow worker service account must have access to all services involved.
+
+Required roles:
+
+Dataflow Worker
+
+Pub/Sub Subscriber
+
+Pub/Sub Viewer
+
+Storage Object Admin
+
+BigQuery Data Editor
+
+Your screenshots already confirm these permissions are correctly configured.
+
+8. Create the Dataflow Pipeline
+Your Python Dataflow pipeline performs these steps.
+
+Step 1
+Continuously listen to Pub/Sub messages.
+
+Step 2
+When a message arrives, extract:
+
+bucket name
+
+file name
+
+Step 3
+Construct the file path:
+
+gs://bucket/file.csv
+Step 4
+Open the CSV file from Cloud Storage.
+
+Step 5
+Parse each row in the CSV file.
+
+Example CSV row:
+
+1,Ravi,Hyderabad
+Converted to a structured record:
+
+{
+ id: 1,
+ name: Ravi,
+ location: Hyderabad
+}
+Step 6
+Insert the parsed rows into the BigQuery table.
+
+9. Run Two Programs in Two Terminals
+To simulate streaming ingestion, you will run two programs simultaneously.
+
+Terminal 1 – Start the Dataflow Streaming Job
+Run the Dataflow pipeline script.
+
+This job:
+
+starts a streaming Dataflow pipeline
+
+listens continuously to Pub/Sub messages
+
+processes files whenever they appear
+
+Once started, this job keeps running and waiting for events.
+
+Terminal 2 – Run the CSV Generator Script
+Run your CSV generation script (faker script).
+
+This script:
+
+generates random employee data
+
+creates CSV files
+
+uploads those files to the Cloud Storage bucket
+
+Each uploaded file triggers the pipeline automatically.
+
+10. Upload or Generate CSV Files
+Example CSV:
+
+id,name,location
+1,Ravi,Hyderabad
+2,Asha,Delhi
+3,John,USA
+When the CSV generator runs, it automatically uploads files into:
+
+ex-bucket9
+
+11. What Happens Automatically
+Once the file is uploaded:
+
+Cloud Storage detects a new file
+
+Cloud Storage sends an event to Pub/Sub
+
+Pub/Sub publishes a message
+
+Dataflow reads the message
+
+Dataflow reads the CSV file from the bucket
+
+Dataflow parses the rows
+
+Dataflow inserts rows into BigQuery
+
+Within a few seconds the data appears in the table.
+
+12. Verify the Data
+Open BigQuery and check the table.
+
+Example output:
+
+id	name	location
+1	Ravi	Hyderabad
+2	Asha	Delhi
+3	John	USA
+Each new CSV upload will continuously append new rows.
+
+Final Architecture
+CSV Generator Script
+        ↓
+Cloud Storage Bucket
+        ↓
+Storage Notification
+        ↓
+Pub/Sub Topic
+        ↓
+Pub/Sub Subscription
+        ↓
+Dataflow Streaming Pipeline
+        ↓
+CSV Processing
+        ↓
+BigQuery Table
+How the Two-Terminal Setup Works
+Terminal 1
+Dataflow Streaming Job
+(waiting for messages)
+
+Terminal 2
+CSV Generator Script
+(upload files repeatedly)
+
+Result
+Automatic streaming ingestion into BigQuery
+💡 Important:
+This architecture is a real-time ingestion pipeline commonly used in production data engineering systems.
