@@ -70,6 +70,23 @@ This is the most important configuration.
 
 Configure the bucket so that whenever a file upload finishes, a message is sent to the Pub/Sub topic.
 
+This is the most important step.
+
+gsutil notification create \
+-t gcs-file-topic \
+-f json \
+-e OBJECT_FINALIZE \
+gs://ex-bucket9
+
+Verify:
+
+gsutil notification list gs://ex-bucket9
+
+You should see something like:
+
+Cloud Pub/Sub topic: gcs-file-topic
+Event Types: OBJECT_FINALIZE
+
 The message contains information such as:
 
 bucket name
