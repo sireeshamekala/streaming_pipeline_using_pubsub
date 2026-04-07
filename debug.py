@@ -1,6 +1,7 @@
 #Addition Function
 def add(a,b):
     c=a+b
+    print("Addition completed")
     print(c)
 
 add(2,3)
